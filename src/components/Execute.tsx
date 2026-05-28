@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Square, Check, Timer, Landmark, ShieldCheck, Milestone } from 'lucide-react';
 import { Task } from '../types';
+import { Language, t } from '../i18n';
 
 interface ExecuteProps {
   task: Task;
   onCompleteTask: (taskId: string, durationMinutes: number, milestones: string[]) => void;
   onCancelExecution: () => void;
   streakCount: number;
+  lang: Language;
 }
 
-export default function Execute({ task, onCompleteTask, onCancelExecution, streakCount }: ExecuteProps) {
+export default function Execute({ task, onCompleteTask, onCancelExecution, streakCount, lang }: ExecuteProps) {
   const [phase, setPhase] = useState<'ignition' | 'flow'>('ignition');
   const [secondsRemaining, setSecondsRemaining] = useState(120); // 2 minutes
   const [secondsElapsed, setSecondsElapsed] = useState(0); // For flow stopwatch
@@ -76,19 +78,19 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
   // Get the coaching motivational labels based on flow stopwatch duration
   const getSubTitleText = () => {
     if (phase === 'ignition') {
-      return 'Just two minutes. Only start. The friction is only in starting.';
+      return t(lang, 'timerIgnitionSubtitle');
     }
     const mins = Math.floor(secondsElapsed / 60);
     if (mins >= 60) {
-      return 'This is a real sprint. You have overridden procrastination details entirely.';
+      return t(lang, 'timerFlow60');
     }
     if (mins >= 30) {
-      return 'You are in flow. The resistance has dissolved.';
+      return t(lang, 'timerFlow30');
     }
     if (mins >= 10) {
-      return 'Deep focus activated. Keep building momentum.';
+      return t(lang, 'timerDeepFocus');
     }
-    return 'Ignition succeeded. You are now in flow state.';
+    return t(lang, 'timerFlowSubtitle');
   };
 
   // Skip ignition 2-min countdown directly to flow state for prototype testing
@@ -109,7 +111,7 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
           {/* Header tracking context */}
           <div className="space-y-1">
             <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">
-              Active Focus
+              {t(lang, 'activeFocus')}
             </span>
             <h2 id="execute-task-title" className="text-xl sm:text-2xl font-sans font-medium text-neutral-100 tracking-tight max-w-md mx-auto">
               {task.title}
@@ -124,7 +126,7 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
                   {formatTime(secondsRemaining)}
                 </div>
                 <div className="text-xs font-mono uppercase tracking-widest text-amber-500/60">
-                  Ignition Countdown
+                  {t(lang, 'ignitionCountdown')}
                 </div>
               </div>
             ) : (
@@ -133,7 +135,7 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
                   {formatTime(secondsElapsed)}
                 </div>
                 <div className="text-xs font-mono uppercase tracking-widest text-emerald-500/60">
-                  Flow stopwatch active
+                  {t(lang, 'flowStopwatchActive')}
                 </div>
               </div>
             )}
@@ -156,7 +158,7 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
             <div id="milestones-history" className="text-left bg-neutral-950/60 p-4 border border-neutral-850 rounded space-y-2 max-h-36 overflow-y-auto">
               <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 flex items-center gap-1">
                 <Milestone className="h-3.5 w-3.5 text-neutral-500" />
-                Logged Milestones:
+                {t(lang, 'loggedMilestones')}
               </span>
               <ul className="space-y-1.5 font-mono text-xs text-neutral-300">
                 {milestones.map((m, idx) => (
@@ -172,13 +174,13 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
           {showMilestoneInput ? (
             <form onSubmit={handleAddMilestone} className="text-left bg-neutral-950 p-4 rounded border border-amber-500/30 space-y-3">
               <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
-                Specify milestone description:
+                {lang === 'ru' ? 'Описание зафиксированной вехи:' : 'Specify milestone description:'}
               </label>
               <input
                 type="text"
                 value={currentMilestoneText}
                 onChange={(e) => setCurrentMilestoneText(e.target.value)}
-                placeholder="What progress did you just secure?"
+                placeholder={t(lang, 'milestonePlaceholder')}
                 className="block w-full rounded border-0 py-2 px-3 bg-neutral-900 text-neutral-100 ring-1 ring-inset ring-neutral-800 placeholder:text-neutral-500 focus:ring-1 focus:ring-amber-500 text-xs focus:outline-none"
                 required
                 autoFocus
@@ -192,13 +194,13 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
                   }}
                   className="rounded px-2.5 py-1.5 text-neutral-400 hover:text-neutral-200 uppercase"
                 >
-                  Cancel
+                  {t(lang, 'cancel')}
                 </button>
                 <button
                   type="submit"
                   className="rounded px-3 py-1.5 bg-amber-500 text-neutral-950 font-bold uppercase"
                 >
-                  Log
+                  {t(lang, 'log')}
                 </button>
               </div>
             </form>
@@ -210,10 +212,10 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
             <button
               id="stop-execution-btn"
               onClick={handleStop}
-              className="px-5 py-3 border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-red-400 rounded-md text-sm font-semibold tracking-wider font-mono uppercase transition-colors flex items-center gap-2"
+              className="px-5 py-3 border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-red-400 rounded-md text-sm font-semibold tracking-wider font-mono uppercase transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Square className="h-4 w-4" />
-              <span>Stop</span>
+              <span>{t(lang, 'stop')}</span>
             </button>
 
             {/* In-flow details extra action buttons */}
@@ -221,10 +223,10 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
               <button
                 id="milestone-log-btn"
                 onClick={() => setShowMilestoneInput(true)}
-                className="px-5 py-3 border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 rounded-md text-sm font-semibold tracking-wider font-mono uppercase transition-colors flex items-center gap-2"
+                className="px-5 py-3 border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 rounded-md text-sm font-semibold tracking-wider font-mono uppercase transition-colors flex items-center gap-2 cursor-pointer"
               >
                 <Milestone className="h-4 w-4 text-emerald-400" />
-                <span>Milestone</span>
+                <span>{t(lang, 'milestone')}</span>
               </button>
             )}
 
@@ -232,10 +234,10 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
             <button
               id="complete-task-btn"
               onClick={handleDone}
-              className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 rounded-md text-sm font-semibold tracking-wider uppercase transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 rounded-md text-sm font-semibold tracking-wider uppercase transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Check className="h-4 w-4" />
-              <span>Done</span>
+              <span>{t(lang, 'done')}</span>
             </button>
           </div>
 
@@ -246,9 +248,9 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
                 type="button"
                 id="skip-ignition-btn"
                 onClick={skipIgnition}
-                className="text-[10px] font-mono tracking-widest text-neutral-600 hover:text-neutral-400 transition-colors uppercase"
+                className="text-[10px] font-mono tracking-widest text-neutral-600 hover:text-neutral-400 transition-colors uppercase cursor-pointer"
               >
-                Skip 2M Ignition (Test Shortcut)
+                {t(lang, 'skipIgnition')}
               </button>
             </div>
           )}
@@ -266,19 +268,19 @@ export default function Execute({ task, onCompleteTask, onCancelExecution, strea
 
           <div className="space-y-2">
             <span className="text-xs font-mono uppercase tracking-widest text-emerald-500">
-              Task Completed
+              {t(lang, 'taskCompleted')}
             </span>
             <h3 className="text-2xl font-sans font-medium text-neutral-100 tracking-tight">
-              Action secured.
+              {t(lang, 'actionSecured')}
             </h3>
             <p className="text-sm font-sans text-neutral-400 italic max-w-sm mx-auto leading-relaxed pt-2">
-              &quot;{task.title}&quot; moved to the Done Log. No planning daydream, just pure execution.
+              &quot;{task.title}&quot; {t(lang, 'movedToDoneLog')}
             </p>
           </div>
 
           <div className="pt-6 border-t border-neutral-850 font-mono text-xs text-neutral-500 space-y-1">
-            <p>Active streak: {streakCount} continuous days</p>
-            <p>Moving back to Sugggestion Engine shortly...</p>
+            <p>{t(lang, 'activeStreak').replace('{streak}', String(streakCount))}</p>
+            <p>{t(lang, 'movingBackShortly')}</p>
           </div>
         </div>
       )}

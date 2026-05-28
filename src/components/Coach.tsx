@@ -2,13 +2,15 @@ import React from 'react';
 import { Compass, Sparkles } from 'lucide-react';
 import { Task } from '../types';
 import { daysBetween } from '../data';
+import { Language, t, formatDays, getRussianPlural } from '../i18n';
 
 interface CoachProps {
   tasks: Task[];
   streakCount: number;
+  lang: Language;
 }
 
-export default function Coach({ tasks, streakCount }: CoachProps) {
+export default function Coach({ tasks, streakCount, lang }: CoachProps) {
   const now = new Date();
 
   const getCoachingText = (): string => {
@@ -26,18 +28,24 @@ export default function Coach({ tasks, streakCount }: CoachProps) {
 
     if (completedLongAvoidedToday) {
       const waitDays = daysBetween(new Date(completedLongAvoidedToday.createdDate), new Date(completedLongAvoidedToday.completedDate!));
+      if (lang === 'ru') {
+        return `Серьёзное препятствие сломлено. Дело «${completedLongAvoidedToday.title}» откладывалось ${formatDays(waitDays, lang)}, но ты наконец сделал это. Реальное дело прервало суету ума.`;
+      }
       return `Real block defeated. "${completedLongAvoidedToday.title}" spent ${waitDays} days avoided, but you finally executed. Action resolved the daydream loop.`;
     }
 
     // 2. When one or more tasks is completed today
     if (completedTodayList.length === 1) {
-      return 'Good. The day is yours. The rest can wait.';
+      return t(lang, 'coachOneCompleted');
     } else if (completedTodayList.length > 1) {
-      return 'Action maintains momentum. Do not overwhelm your stamina; focus on securing rest today.';
+      return t(lang, 'coachMultipleCompleted');
     }
 
     // 3. Streak of 5+ days
     if (streakCount >= 5) {
+      if (lang === 'ru') {
+        return `Замечательная серия из ${streakCount} ${getRussianPlural(streakCount, 'дня', 'дней', 'дней')} подряд. Твоя концентрация непоколебима. Рассмотри возможность взяться за более глубокий вызов.`;
+      }
       return `Outstanding streak of ${streakCount} consecutive days. Your attention stamina is solid. Consider choosing a slightly deeper challenge.`;
     }
 
@@ -50,6 +58,9 @@ export default function Coach({ tasks, streakCount }: CoachProps) {
 
     if (oldestUntouched) {
       const waitDays = daysBetween(new Date(oldestUntouched.createdDate), now);
+      if (lang === 'ru') {
+        return `Дело «${oldestUntouched.title}» висит уже ${formatDays(waitDays, lang)}. Оно важно для тебя — или нет? Что на самом деле мешает сделать первый шаг?`;
+      }
       return `"${oldestUntouched.title}" has waited ${waitDays} days. Is this actually important to your life, or not? What is the specific anxiety blocking your start?`;
     }
 
@@ -58,15 +69,15 @@ export default function Coach({ tasks, streakCount }: CoachProps) {
     
     // Evening scenario with nothing done
     if (currentHour >= 18 && completedTodayList.length === 0) {
-      return 'The sun is setting. It is acceptable if nothing got completed. Secure your mind, rest, and reset with energy tomorrow.';
+      return t(lang, 'coachEvening');
     }
 
     // Morning scenario
     if (currentHour < 12) {
-      return 'Morning. Willpower is at peak limit. Select the Today tab, ignore planning loops, and lock in the Suggestion.';
+      return t(lang, 'coachMorning');
     }
 
-    return 'Compass: One single action is the only link between intention and reality.';
+    return t(lang, 'coachBase');
   };
 
   const adviceLine = getCoachingText();
@@ -78,7 +89,7 @@ export default function Coach({ tasks, streakCount }: CoachProps) {
     >
       <div className="flex items-center justify-center space-x-2 text-xs">
         <span className="font-mono text-neutral-500 uppercase tracking-widest text-[10px]">
-          Coach Compass:
+          {lang === 'ru' ? 'КОУЧ КОМПАС:' : 'Coach Compass:'}
         </span>
         <span id="coach-advice-text" className="font-sans text-neutral-300 font-medium text-[11px] leading-relaxed italic">
           &quot;{adviceLine}&quot;

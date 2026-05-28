@@ -2,27 +2,16 @@ import React from 'react';
 import { Compass, Sparkles, TrendingUp, Calendar, Inbox, Ban } from 'lucide-react';
 import { Task, Direction } from '../types';
 import { daysBetween } from '../data';
+import { Language, t, translateDirectionName, formatWaitDuration, getRussianPlural } from '../i18n';
 
 interface MirrorProps {
   tasks: Task[];
   directions: Direction[];
+  lang: Language;
 }
 
-export default function Mirror({ tasks, directions }: MirrorProps) {
+export default function Mirror({ tasks, directions, lang }: MirrorProps) {
   const now = new Date();
-
-  // Helper to format days waited beautifully
-  const formatWaitDuration = (days: number): string => {
-    if (days >= 365) {
-      const years = +(days / 365).toFixed(1);
-      return `${years} year${years !== 1 ? 's' : ''}`;
-    }
-    if (days >= 30) {
-      const months = +(days / 30).toFixed(1);
-      return `${months} month${months !== 1 ? 's' : ''}`;
-    }
-    return `${days} day${days !== 1 ? 's' : ''}`;
-  };
 
   // 1. Core counters
   const completedTasks = tasks.filter(t => t.completedDate && !t.buried);
@@ -57,9 +46,7 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
     }))
     .sort((a, b) => b.waitedDays - a.waitedDays);
 
-  // 3. Headline Metric: Oldest important task: "was N days, now M days"
-  // N (was) = historical peak age (max age of any task in our history starting from creation to either completion or now)
-  // M (now) = oldest active task's current age
+  // 3. Headline Metric: Oldest important task
   const activeUncompleted = tasks.filter(t => !t.completedDate && !t.buried && t.state === 'active');
   const activeAges = activeUncompleted.map(t => daysBetween(new Date(t.createdDate), now));
   const currentMaxAge = activeAges.length > 0 ? Math.max(...activeAges) : 0;
@@ -71,7 +58,7 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
   });
   const historicMaxAge = historicAges.length > 0 ? Math.max(...historicAges, currentMaxAge) : currentMaxAge;
 
-  // Let's calibrate N vs M so N is never less than M
+  // Calibrate Was vs Now so Was is never less than Now
   const wasNDays = Math.max(historicMaxAge, currentMaxAge, 45); // fallback default is 45 days if empty database
   const nowMDays = currentMaxAge;
 
@@ -82,7 +69,6 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
   const directionEnergies = directions.map(dir => {
     // Count active tasks completed in this direction this week
     const completedInPastSevenDays = completedThisWeek.filter(t => t.directionId === dir.id).length;
-    // Let's calculate percentage matching max to give a relative width
     return {
       direction: dir,
       count: completedInPastSevenDays,
@@ -92,15 +78,24 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
   // Find max count to scale bars cleanly
   const maxWeeklyCount = Math.max(...directionEnergies.map(d => d.count), 1);
 
+  // Formatting actions count this week helper
+  const formatActionsCount = (count: number) => {
+    if (lang === 'ru') {
+      const pluralWord = getRussianPlural(count, 'действие', 'действия', 'действий');
+      return `${count} ${pluralWord} на этой неделе`;
+    }
+    return `${count} action${count !== 1 ? 's' : ''} this week`;
+  };
+
   return (
     <div id="mirror-container" className="max-w-2xl mx-auto py-12 px-4 sm:px-6 space-y-10">
       {/* Header section */}
       <div className="text-center">
         <h1 id="mirror-title" className="text-3xl font-sans font-medium tracking-tight text-neutral-100">
-          The Mirror
+          {t(lang, 'mirrorScreenTitle')}
         </h1>
         <p id="mirror-subtitle" className="mt-3 text-sm text-neutral-400 font-mono tracking-wide">
-          Proof of progress. No illusions, only actual steps recorded.
+          {t(lang, 'mirrorScreenDesc')}
         </p>
       </div>
 
@@ -109,53 +104,53 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
         {/* Oldest Important Task (Single Most Important Number Hero Card) */}
         <div id="headline-metric-card" className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between text-xs font-mono uppercase text-amber-500">
-            <span>Primary Focus Metric</span>
+            <span>{t(lang, 'primaryFocusMetric')}</span>
             <TrendingUp className="h-4 w-4" />
           </div>
           <div>
             <h2 className="text-sm font-sans font-medium text-neutral-300">
-              Oldest Action Weight
+              {t(lang, 'oldestActionWeight')}
             </h2>
             <div className="mt-2 flex items-baseline space-x-2">
               <span id="now-days-val" className="text-5xl font-mono font-bold text-neutral-100">
                 {nowMDays}
               </span>
-              <span className="text-sm font-mono text-neutral-400">days delay now</span>
+              <span className="text-sm font-mono text-neutral-400">{t(lang, 'daysDelayNow')}</span>
             </div>
             <div className="mt-2 flex items-center space-x-1.5 font-mono text-xs text-neutral-500">
-              <span>Historical record: {wasNDays} days.</span>
+              <span>{t(lang, 'historicalRecord').replace('{days}', String(wasNDays))}</span>
               {nowMDays < wasNDays && (
-                <span className="text-emerald-500 font-bold">Resisted block has decreased!</span>
+                <span className="text-emerald-500 font-bold">{t(lang, 'resistedBlockDecreased')}</span>
               )}
             </div>
           </div>
           <p className="text-xs text-neutral-400 leading-normal font-sans">
-            Your single goal is keeping this weight as close to zero as humanly possible. Completing old avoided tasks frees critical cognitive memory.
+            {t(lang, 'keepWeightCloseToZero')}
           </p>
         </div>
 
-        {/* Celebrating Noise Release (Dismissing noise matches signal gains) */}
+        {/* Celebrating Noise Release */}
         <div id="released-noise-card" className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between text-xs font-mono uppercase text-amber-500">
-            <span>Redundancy Filter</span>
+            <span>{t(lang, 'redundancyFilter')}</span>
             <Ban className="h-4 w-4" />
           </div>
           <div>
             <h2 className="text-sm font-sans font-medium text-neutral-300">
-              Noise Released
+              {t(lang, 'noiseReleased')}
             </h2>
             <div className="mt-2 flex items-baseline space-x-2">
               <span id="released-count-val" className="text-5xl font-mono font-bold text-neutral-100">
                 {buriedCount}
               </span>
-              <span className="text-sm font-mono text-neutral-400">tasks dissolved</span>
+              <span className="text-sm font-mono text-neutral-400">{t(lang, 'tasksDissolved')}</span>
             </div>
             <p className="mt-2 font-mono text-xs text-neutral-500">
-              Acknowledge details you will never focus on.
+              {t(lang, 'acknowledgeDetails')}
             </p>
           </div>
           <p className="text-xs text-neutral-400 leading-normal font-sans">
-            Burying unneeded dreams and decluttering your agenda is a primary sign of focus calibration. Dismissing noise earns identical weight to signal execution.
+            {t(lang, 'buryingUnneededDreams')}
           </p>
         </div>
       </div>
@@ -163,39 +158,51 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
       {/* Accomplishments Overviews */}
       <div id="accomplishment-comparison-panel" className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 space-y-6">
         <h3 className="text-sm font-sans font-medium uppercase tracking-wider text-neutral-300 border-b border-neutral-850 pb-3">
-          Self-Comparison Rhythms
+          {t(lang, 'selfComparisonRhythms')}
         </h3>
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="space-y-1">
-            <span className="text-xs font-mono text-neutral-400 block uppercase">This Week</span>
+            <span className="text-xs font-mono text-neutral-400 block uppercase">{t(lang, 'thisWeek')}</span>
             <span id="week-done-val" className="text-3xl font-mono font-semibold text-neutral-200">{completedThisWeek.length}</span>
-            <span className="text-neutral-500 font-mono text-[11px] block">completed</span>
+            <span className="text-neutral-500 font-mono text-[11px] block">{t(lang, 'completed')}</span>
           </div>
 
           <div className="space-y-1">
-            <span className="text-xs font-mono text-neutral-400 block uppercase">This Month</span>
+            <span className="text-xs font-mono text-neutral-400 block uppercase">{t(lang, 'thisMonth')}</span>
             <span id="month-done-val" className="text-3xl font-mono font-semibold text-neutral-200">{completedThisMonth.length}</span>
-            <span className="text-neutral-500 font-mono text-[11px] block">completed</span>
+            <span className="text-neutral-500 font-mono text-[11px] block">{t(lang, 'completed')}</span>
           </div>
 
           <div className="col-span-2 md:col-span-1 space-y-1">
-            <span className="text-xs font-mono text-neutral-400 block uppercase">Last Month</span>
+            <span className="text-xs font-mono text-neutral-400 block uppercase">{t(lang, 'lastMonth')}</span>
             <span id="last-month-done-val" className="text-3xl font-mono font-semibold text-neutral-400">{completedLastMonth.length}</span>
-            <span className="text-neutral-500 font-mono text-[11px] block">reference standard</span>
+            <span className="text-neutral-500 font-mono text-[11px] block">{t(lang, 'referenceStandard')}</span>
           </div>
         </div>
 
         {/* Comparison evaluation sentence */}
         <div className="bg-neutral-950 p-4 border border-neutral-850 rounded text-xs font-sans text-neutral-300 leading-relaxed">
           {completedThisMonth.length >= completedLastMonth.length ? (
-            <span>
-              You are keeping pace. This month you secured <strong className="text-emerald-400">{completedThisMonth.length}</strong> tasks versus <strong className="text-neutral-400">{completedLastMonth.length}</strong> previously. Focus momentum is expanding.
-            </span>
+            lang === 'ru' ? (
+              <span>
+                Ты держишь темп. В этом месяце ты выполнил <strong className="text-emerald-400">{completedThisMonth.length}</strong> дел по сравнению с <strong className="text-neutral-400">{completedLastMonth.length}</strong> в прошлом. Твой фокус набирает обороты.
+              </span>
+            ) : (
+              <span>
+                You are keeping pace. This month you secured <strong className="text-emerald-400">{completedThisMonth.length}</strong> tasks versus <strong className="text-neutral-400">{completedLastMonth.length}</strong> previously. Focus momentum is expanding.
+              </span>
+            )
           ) : (
-            <span>
-              You resolved <strong className="text-amber-500">{completedThisMonth.length}</strong> tasks vs last period&apos;s <strong className="text-neutral-450">{completedLastMonth.length}</strong>. Procrastination resistance is hovering, seek out the single oldest task in Heute screen.
-            </span>
+            lang === 'ru' ? (
+              <span>
+                Ты выполнил <strong className="text-amber-500">{completedThisMonth.length}</strong> дел против <strong className="text-neutral-400">{completedLastMonth.length}</strong> в прошлый период. Напряжение прокрастинации колеблется — разыщи старейшее дело на экране «Сегодня».
+              </span>
+            ) : (
+              <span>
+                You resolved <strong className="text-amber-500">{completedThisMonth.length}</strong> tasks vs last period&apos;s <strong className="text-neutral-400">{completedLastMonth.length}</strong>. Procrastination resistance is hovering, seek out the single oldest task in Heute screen.
+              </span>
+            )
           )}
         </div>
       </div>
@@ -203,28 +210,28 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
       {/* Long Avoided Conquered Tasks list */}
       <div id="conquered-ghosts-panel" className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 space-y-5">
         <h3 className="text-sm font-sans font-medium uppercase tracking-wider text-neutral-300 border-b border-neutral-850 pb-3">
-          Deep Resistance Dissolved
+          {t(lang, 'deepResistanceDissolved')}
         </h3>
         <p className="text-xs text-neutral-400 font-mono leading-relaxed">
-          Completed tasks that had stayed in hibernation for more than 30 days before execution:
+          {t(lang, 'completedHibernateThirtyDays')}
         </p>
 
         {longWaitingConquered.length > 0 ? (
           <ul id="long-waiting-list" className="space-y-3.5 pt-1">
-            {longWaitingConquered.map(({ task: t, waitedDays }) => (
-              <li key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-950 border border-neutral-850 p-3.5 rounded space-y-2 sm:space-y-0 text-xs">
+            {longWaitingConquered.map(({ task, waitedDays }) => (
+              <li key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-950 border border-neutral-850 p-3.5 rounded space-y-2 sm:space-y-0 text-xs">
                 <span className="text-neutral-200 font-sans font-medium line-clamp-2 max-w-md">
-                  {t.title}
+                  {task.title}
                 </span>
                 <span className="shrink-0 text-[11px] font-mono tracking-wider text-amber-500 bg-amber-950/20 px-2.5 py-1 border border-amber-900/30 rounded uppercase text-right">
-                  waited {formatWaitDuration(waitedDays)}
+                  {t(lang, 'waitedDaysPrefix').replace('{days}', formatWaitDuration(waitedDays, lang))}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
           <p className="text-xs italic text-neutral-500 font-mono">
-            No long-hibernating tasks completed yet. Defeat your oldest active task to unlock this category.
+            {t(lang, 'noLongHibernate')}
           </p>
         )}
       </div>
@@ -233,10 +240,10 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
       <div id="thread-energies-breakdown" className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 space-y-6">
         <div className="space-y-1 border-b border-neutral-850 pb-3">
           <h3 className="text-sm font-sans font-medium uppercase tracking-wider text-neutral-300">
-            Life Thread Energy Distribution
+            {t(lang, 'lifeThreadDistribution')}
           </h3>
           <p className="text-xs text-neutral-400 font-mono">
-            Tracks which core directions received energy from executed actions this week:
+            {t(lang, 'tracksCoreDirections')}
           </p>
         </div>
 
@@ -247,14 +254,14 @@ export default function Mirror({ tasks, directions }: MirrorProps) {
               <div key={d.id} className="space-y-1.5">
                 <div className="flex justify-between items-center text-xs font-mono">
                   <span className={`uppercase font-medium ${d.active ? 'text-neutral-200' : 'text-neutral-500'}`}>
-                    {d.name} {!d.active && '(Dormant)'}
+                    {translateDirectionName(d.name, lang)} {!d.active && (lang === 'ru' ? ' (Спящее)' : ' (Dormant)')}
                   </span>
                   <span className="text-neutral-400 font-mono">
-                    {count} action{count !== 1 ? 's' : ''} this week
+                    {formatActionsCount(count)}
                   </span>
                 </div>
                 
-                {/* Horizontal bar implementation */}
+                {/* Horizontal bar */}
                 <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-850">
                   <div 
                     className={`h-full transition-all duration-500 rounded-full ${
