@@ -8,10 +8,20 @@ import Execute from './components/Execute';
 import Mirror from './components/Mirror';
 import Backlog from './components/Backlog';
 import Coach from './components/Coach';
+import { Language, t, translateDirectionName, translatePersonName } from './i18n';
 
 const LOCAL_STORAGE_KEY = 'compass_v1_app_state';
 
 export default function App() {
+  const [lang, setLangState] = useState<Language>(() => {
+    return (localStorage.getItem('compass_language') as Language) || 'ru';
+  });
+
+  const handleSetLanguage = (newLang: Language) => {
+    setLangState(newLang);
+    localStorage.setItem('compass_language', newLang);
+  };
+
   const [state, setState] = useState<AppState | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [newDirectionName, setNewDirectionName] = useState('');
@@ -197,7 +207,7 @@ export default function App() {
       
       // Enforce the rule: Maximum of 3 active directions allowed at any time
       if (!match.active && activeCount >= 3) {
-        setSettingsError('Max 3 active threads are allowed at once to prevent attention fragmentation.');
+        setSettingsError(t(lang, 'maxDirectionsError'));
         return prev;
       }
 
@@ -216,7 +226,7 @@ export default function App() {
 
     // Reject duplicates
     if (state.directions.some((d) => d.name.toLowerCase() === newDirectionName.trim().toLowerCase())) {
-      setSettingsError('Direction with this label already exists.');
+      setSettingsError(t(lang, 'duplicateDirectionError'));
       return;
     }
 
@@ -241,7 +251,7 @@ export default function App() {
     if (!newPersonName.trim()) return;
 
     if (state.people.some((p) => p.toLowerCase() === newPersonName.trim().toLowerCase())) {
-      setSettingsError('Person with this name is already configured.');
+      setSettingsError(t(lang, 'duplicatePersonError'));
       return;
     }
 
@@ -273,10 +283,10 @@ export default function App() {
           <div className="flex items-center space-x-2.5">
             <CompassIcon className="h-6 w-6 text-amber-500" />
             <span className="font-display text-xl font-bold tracking-tight text-neutral-150">
-              Compass
+              {t(lang, 'appName')}
             </span>
             <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-amber-950 border border-amber-900 text-[9px] font-mono text-amber-400 font-semibold tracking-wider uppercase">
-              Micro Prototype
+              {t(lang, 'microPrototype')}
             </span>
           </div>
 
@@ -286,7 +296,7 @@ export default function App() {
             {state.executingTaskId && activeTaskForExecution ? (
               <div className="flex items-center space-x-2 bg-amber-950/25 border border-amber-500/20 px-3 py-1.5 rounded-full text-xs font-mono text-amber-500 font-medium">
                 <span className="animate-pulse bg-amber-500 rounded-full h-2 w-2" />
-                <span>Execution Lock Active</span>
+                <span>{t(lang, 'executionLock')}</span>
               </div>
             ) : (
               // Standard client screens tabs
@@ -300,7 +310,7 @@ export default function App() {
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  Capture
+                  {t(lang, 'capture')}
                 </button>
                 <button
                   id="tab-today"
@@ -311,7 +321,7 @@ export default function App() {
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  Today
+                  {t(lang, 'today')}
                 </button>
                 <button
                   id="tab-mirror"
@@ -322,7 +332,7 @@ export default function App() {
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  Mirror
+                  {t(lang, 'mirror')}
                 </button>
                 <button
                   id="tab-backlog"
@@ -333,10 +343,30 @@ export default function App() {
                       : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  Basement
+                  {t(lang, 'basement')}
                 </button>
               </>
             )}
+
+            {/* Separator */}
+            <div className="h-4 w-px bg-neutral-900" />
+
+            {/* Language Toggle */}
+            <div className="flex items-center space-x-1 border border-neutral-900 px-2 py-1 rounded font-mono text-[9px] sm:text-[10px]">
+              <button
+                onClick={() => handleSetLanguage('ru')}
+                className={`transition-colors uppercase ${lang === 'ru' ? 'text-amber-500 font-bold' : 'text-neutral-500 hover:text-neutral-350'}`}
+              >
+                RU
+              </button>
+              <span className="text-neutral-800">/</span>
+              <button
+                onClick={() => handleSetLanguage('en')}
+                className={`transition-colors uppercase ${lang === 'en' ? 'text-amber-500 font-bold' : 'text-neutral-500 hover:text-neutral-350'}`}
+              >
+                EN
+              </button>
+            </div>
 
             {/* Separator */}
             <div className="h-4 w-px bg-neutral-900" />
@@ -346,7 +376,7 @@ export default function App() {
               id="settings-trigger"
               onClick={() => setShowSettings(true)}
               className="p-2 rounded text-neutral-500 hover:text-neutral-200 transition-colors"
-              title="Adjust Priority Parameters"
+              title={t(lang, 'tweakParams')}
             >
               <Sliders className="h-4.5 w-4.5" />
             </button>
@@ -364,6 +394,7 @@ export default function App() {
             onCompleteTask={handleCompleteTask}
             onCancelExecution={handleCancelExecution}
             streakCount={state.streakCount}
+            lang={lang}
           />
         ) : (
           <>
@@ -373,6 +404,7 @@ export default function App() {
                 onUpdateTaskPerson={handleUpdateTaskPerson}
                 directions={state.directions}
                 people={state.people}
+                lang={lang}
               />
             )}
 
@@ -386,11 +418,12 @@ export default function App() {
                 frogMode={state.frogMode}
                 onToggleFrogMode={handleToggleFrogMode}
                 onStartTask={handleStartTask}
+                lang={lang}
               />
             )}
 
             {state.activeScreen === 'mirror' && (
-              <Mirror tasks={state.tasks} directions={state.directions} />
+              <Mirror tasks={state.tasks} directions={state.directions} lang={lang} />
             )}
 
             {state.activeScreen === 'backlog' && (
@@ -400,6 +433,7 @@ export default function App() {
                 onActivateTask={handleActivateTask}
                 onBuryTask={handleBuryTask}
                 onUpdateTaskDetails={handleUpdateTaskDetails}
+                lang={lang}
               />
             )}
           </>
@@ -408,11 +442,11 @@ export default function App() {
 
       {/* Global Coach Strip & Footer */}
       <footer id="app-footer" className="mt-auto border-t border-neutral-900/60 bg-black/40 py-8 space-y-4">
-        <Coach tasks={state.tasks} streakCount={state.streakCount} />
+        <Coach tasks={state.tasks} streakCount={state.streakCount} lang={lang} />
         
         <div className="text-center font-mono text-[10px] text-neutral-600 leading-normal max-w-xs mx-auto">
-          <p>Compass is an action-driven anti-procrastination engine.</p>
-          <p className="mt-1">Completed actions are signal. Planning daydream is noise.</p>
+          <p>{lang === 'ru' ? 'Compass — это система борьбы с прокрастинацией через действие.' : 'Compass is an action-driven anti-procrastination engine.'}</p>
+          <p className="mt-1">{lang === 'ru' ? 'Выполненные дела — это сигнал. Мечты о планировании — это шум.' : 'Completed actions are signal. Planning daydream is noise.'}</p>
         </div>
       </footer>
 
@@ -427,7 +461,7 @@ export default function App() {
                 <div className="flex items-center space-x-2">
                   <Sliders className="h-5 w-5 text-amber-500" />
                   <h3 className="font-display font-bold text-neutral-100 uppercase tracking-widest text-xs">
-                    Tweak Compass Parameters
+                    {t(lang, 'tweakParams')}
                   </h3>
                 </div>
                 <button
@@ -453,10 +487,10 @@ export default function App() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h4 className="text-xs font-display font-medium text-neutral-200 uppercase tracking-wider">
-                    Core life threads (Max 3 Active)
+                    {t(lang, 'settingsCategoryDirections')}
                   </h4>
                   <p className="text-[10px] text-neutral-500 font-mono leading-relaxed">
-                    Limit active priorities to maximum of 3 at once. All dormant direction tasks are penalised heavily inside today suggestor.
+                    {t(lang, 'settingsCategoryDirectionsDesc')}
                   </p>
                 </div>
 
@@ -468,7 +502,7 @@ export default function App() {
                       className="flex items-center justify-between bg-neutral-900/60 p-2.5 rounded border border-neutral-900 text-xs font-mono"
                     >
                       <span className={`uppercase font-medium ${dir.active ? 'text-neutral-100' : 'text-neutral-500'}`}>
-                        {dir.name} {!dir.active && '(Dormant)'}
+                        {translateDirectionName(dir.name, lang)} {!dir.active && (lang === 'ru' ? ' (Спящее)' : ' (Dormant)')}
                       </span>
                       <button
                         type="button"
@@ -480,7 +514,7 @@ export default function App() {
                             : 'bg-neutral-950 border border-neutral-850 text-neutral-400 hover:border-amber-500'
                         }`}
                       >
-                        {dir.active ? 'Active' : 'Dormant'}
+                        {dir.active ? (lang === 'ru' ? 'Активно' : 'Active') : (lang === 'ru' ? 'Спящее' : 'Dormant')}
                       </button>
                     </div>
                   ))}
@@ -492,14 +526,14 @@ export default function App() {
                     type="text"
                     value={newDirectionName}
                     onChange={(e) => setNewDirectionName(e.target.value)}
-                    placeholder="New Direction Name"
+                    placeholder={t(lang, 'directionPlaceholder')}
                     maxLength={30}
                     className="flex-grow rounded border-0 bg-neutral-900 text-neutral-100 ring-1 ring-inset ring-neutral-850 py-1.5 px-3 focus:ring-1 focus:ring-amber-500 text-xs focus:outline-none placeholder:text-neutral-600"
                   />
                   <button
                     type="submit"
                     className="p-2 border border-neutral-850 hover:border-amber-500 hover:text-amber-500 rounded transition-colors text-neutral-400"
-                    title="Add Life Thread"
+                    title={lang === 'ru' ? 'Добавить направление' : 'Add Life Thread'}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -510,10 +544,10 @@ export default function App() {
               <div className="space-y-4 border-t border-neutral-900 pt-6">
                 <div className="space-y-1">
                   <h4 className="text-xs font-display font-medium text-neutral-200 uppercase tracking-wider">
-                    Affected People Directory
+                    {t(lang, 'settingsCategoryPeople')}
                   </h4>
                   <p className="text-[10px] text-neutral-500 font-mono leading-relaxed">
-                    Define the list of people used inside the capture questions. Tying a chore to a human element removes planning noise.
+                    {t(lang, 'settingsCategoryPeopleDesc')}
                   </p>
                 </div>
 
@@ -526,7 +560,7 @@ export default function App() {
                         key={p}
                         className="inline-flex items-center pl-2.5 pr-1.5 py-1 rounded font-mono text-[10px] uppercase tracking-wider bg-neutral-900 border border-neutral-851 text-neutral-300"
                       >
-                        <span>{p}</span>
+                        <span>{translatePersonName(p, lang)}</span>
                         {!isReserved && (
                           <button
                             type="button"
@@ -546,14 +580,14 @@ export default function App() {
                     type="text"
                     value={newPersonName}
                     onChange={(e) => setNewPersonName(e.target.value)}
-                    placeholder="E.g. Neighbor, Daughter"
+                    placeholder={t(lang, 'personPlaceholder')}
                     maxLength={20}
                     className="flex-grow rounded border-0 bg-neutral-900 text-neutral-100 ring-1 ring-inset ring-neutral-850 py-1.5 px-3 focus:ring-1 focus:ring-amber-500 text-xs focus:outline-none placeholder:text-neutral-600"
                   />
                   <button
                     type="submit"
                     className="p-2 border border-neutral-850 hover:border-amber-500 hover:text-amber-500 rounded transition-colors text-neutral-400"
-                    title="Add Person"
+                    title={lang === 'ru' ? 'Добавить человека' : 'Add Person'}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -564,7 +598,7 @@ export default function App() {
 
             <div className="border-t border-neutral-900 pt-4 text-center">
               <span className="font-mono text-[9px] text-neutral-600 block uppercase">
-                V1 Configurable Prototype Weights
+                {lang === 'ru' ? 'V1 Настраиваемые веса параметров' : 'V1 Configurable Prototype Weights'}
               </span>
             </div>
 
