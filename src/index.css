@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Clean Minimalism Monochromatic Gray Scales */
+  --color-neutral-50: #ffffff;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-150: #ececed;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-850: #18181b;
+  --color-neutral-900: #121214;
+  --color-neutral-950: #09090b;
+
+  /* Refined, low-saturation gold/amber accent for minimalist focus */
+  --color-amber-500: #d97706;
+  --color-amber-400: #f59e0b;
+  --color-amber-950: #451a03;
+  --color-amber-900: #78350f;
+}
+
+/* Global resets for pure minimalism */
+html, body {
+  background-color: #09090b;
+  color: #f4f4f5;
+  font-family: "Inter", sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Perfect crisp focus rings & custom selection highlight */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 1px #f59e0b !important;
+}
+
+::selection {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #ffffff;
+}
+
+/* Subtle linear progress and sliders styled for minimalist UI */
+input[type="range"] {
+  accent-color: #f59e0b;
+}
+
+/* High contrast custom scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Crisp button and focus transitions */
+button, input, select, textarea {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Clean, micro cards with high-contrast subtle boundaries */
+.minimalist-card {
+  background-color: #121214;
+  border: 1px solid #18181b;
+  border-radius: 6px;
+  padding: 1.5rem;
+}
